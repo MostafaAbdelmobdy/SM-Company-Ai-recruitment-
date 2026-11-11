@@ -1,17 +1,19 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SM Company (OMNA People) — AI Recruitment & HR Automation</title>
+<title>SM Company (OMNA People) — AI Recruitment & HR Portal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root {
+:root[data-theme="dark"] {
   --bg: #07090e;
-  --surface: rgba(17, 22, 34, 0.72);
-  --surface-hover: rgba(26, 33, 50, 0.85);
+  --bg-elev: #0d111a;
+  --surface: rgba(17, 22, 34, 0.76);
+  --surface-solid: #111622;
+  --surface-input: rgba(7, 9, 14, 0.85);
   --border: rgba(255, 255, 255, 0.09);
   --border-glow: rgba(124, 92, 255, 0.45);
   --p: #7c5cff;
@@ -21,7 +23,29 @@
   --err: #ef4444;
   --ink: #f8fafc;
   --mute: #94a3b8;
+  --shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+  --blob-op: 0.26;
 }
+
+:root[data-theme="light"] {
+  --bg: #f8f9ff;
+  --bg-elev: #eef0ff;
+  --surface: rgba(255, 255, 255, 0.88);
+  --surface-solid: #ffffff;
+  --surface-input: #ffffff;
+  --border: rgba(20, 20, 43, 0.1);
+  --border-glow: rgba(98, 71, 245, 0.4);
+  --p: #6247f5;
+  --p2: #0284c7;
+  --ok: #059669;
+  --warn: #d97706;
+  --err: #dc2626;
+  --ink: #14142b;
+  --mute: #5d6078;
+  --shadow: 0 24px 60px rgba(60, 40, 180, 0.1);
+  --blob-op: 0.45;
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body {
@@ -29,19 +53,18 @@ body {
   color: var(--ink);
   font: 400 16px/1.65 'Manrope', 'Cairo', system-ui, sans-serif;
   overflow-x: hidden;
-  position: relative;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 h1, h2, h3, h4 { line-height: 1.15; letter-spacing: -0.025em; }
 a { color: inherit; text-decoration: none; }
 :focus-visible { outline: 2px solid var(--p); outline-offset: 3px; }
 
-/* Ambient Aurora Blobs */
 .blob {
   position: fixed;
   z-index: -1;
   border-radius: 50%;
   filter: blur(110px);
-  opacity: 0.28;
+  opacity: var(--blob-op);
   pointer-events: none;
   animation: floatBlob 16s ease-in-out infinite alternate;
 }
@@ -50,7 +73,6 @@ a { color: inherit; text-decoration: none; }
   100% { transform: translate(35px, -35px) scale(1.08); }
 }
 
-/* Navbar */
 nav {
   position: sticky;
   top: 0;
@@ -59,7 +81,7 @@ nav {
   align-items: center;
   gap: 10px;
   padding: 14px 5vw;
-  background: rgba(7, 9, 14, 0.78);
+  background: var(--surface);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border-bottom: 1px solid var(--border);
@@ -82,7 +104,7 @@ nav {
   place-items: center;
   color: #fff;
   background: linear-gradient(135deg, var(--p), var(--p2));
-  box-shadow: 0 4px 18px rgba(124, 92, 255, 0.4);
+  box-shadow: 0 4px 18px rgba(124, 92, 255, 0.35);
 }
 .brand small { color: var(--mute); font-weight: 500; font-size: 13px; }
 nav > a:not(.btn), .dd > button {
@@ -97,7 +119,7 @@ nav > a:not(.btn), .dd > button {
 }
 nav > a:not(.btn):hover, .dd:hover > button {
   color: var(--ink);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(124, 92, 255, 0.08);
 }
 .dd { position: relative; }
 .dd div {
@@ -107,10 +129,10 @@ nav > a:not(.btn):hover, .dd:hover > button {
   left: 0;
   min-width: 280px;
   padding: 8px;
-  background: #111622;
+  background: var(--surface-solid);
   border: 1px solid var(--border);
   border-radius: 14px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow);
 }
 .dd:hover div, .dd:focus-within div { display: block; }
 .dd div a {
@@ -122,9 +144,24 @@ nav > a:not(.btn):hover, .dd:hover > button {
   transition: background 0.15s;
 }
 .dd div a small { display: block; color: var(--mute); font-weight: 400; font-size: 12px; }
-.dd div a:hover { background: rgba(124, 92, 255, 0.15); }
+.dd div a:hover { background: rgba(124, 92, 255, 0.12); }
 
-/* Live Server Status Badge */
+.theme-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-input);
+  color: var(--ink);
+  font: 700 12.5px 'Manrope', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.theme-btn:hover { border-color: var(--p); transform: translateY(-1px); }
+
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -134,21 +171,17 @@ nav > a:not(.btn):hover, .dd:hover > button {
   font-size: 12.5px;
   font-weight: 700;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-input);
+  color: var(--ink);
   cursor: pointer;
   transition: all 0.2s;
 }
 .status-pill:hover { border-color: var(--p); }
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--warn);
-}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
 .status-pill.on {
   background: rgba(16, 185, 129, 0.12);
   border-color: rgba(16, 185, 129, 0.35);
-  color: #34d399;
+  color: var(--ok);
 }
 .status-pill.on .dot {
   background: var(--ok);
@@ -158,7 +191,7 @@ nav > a:not(.btn):hover, .dd:hover > button {
 .status-pill.off {
   background: rgba(239, 68, 68, 0.12);
   border-color: rgba(239, 68, 68, 0.35);
-  color: #f87171;
+  color: var(--err);
 }
 .status-pill.off .dot { background: var(--err); }
 @keyframes pulseDot {
@@ -166,7 +199,6 @@ nav > a:not(.btn):hover, .dd:hover > button {
   50% { transform: scale(1.35); opacity: 0.55; }
 }
 
-/* Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -176,71 +208,53 @@ nav > a:not(.btn):hover, .dd:hover > button {
   border: 1px solid var(--p);
   font: 700 14.5px 'Manrope', 'Cairo', sans-serif;
   color: #fff;
-  background: linear-gradient(135deg, var(--p), #6247f5);
+  background: linear-gradient(135deg, var(--p), #583cf0);
   padding: 12px 22px;
   border-radius: 11px;
   transition: all 0.22s;
 }
 .btn:hover {
-  box-shadow: 0 10px 28px rgba(124, 92, 255, 0.4);
+  box-shadow: 0 10px 28px rgba(124, 92, 255, 0.38);
   transform: translateY(-1px);
 }
 .btn.o {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-input);
   color: var(--ink);
   border-color: var(--border);
 }
 .btn.o:hover {
   border-color: var(--p);
-  background: rgba(124, 92, 255, 0.12);
+  background: rgba(124, 92, 255, 0.1);
 }
 .btn.sm { padding: 8px 15px; font-size: 13px; }
-.btn.disabled, a.disabled {
-  opacity: 0.45;
-  pointer-events: none;
-  filter: grayscale(0.6);
-}
 
-/* Sections & Layout */
-section { max-width: 1160px; margin: 0 auto; padding: 88px 5vw 0; }
+section { max-width: 1160px; margin: 0 auto; padding: 84px 5vw 0; }
 .hero {
   display: grid;
   grid-template-columns: 1.12fr 0.88fr;
   gap: 48px;
   align-items: center;
-  padding-top: 68px;
+  padding-top: 64px;
 }
-h1 {
-  font-size: clamp(36px, 5vw, 60px);
-  font-weight: 800;
-  background: linear-gradient(135deg, #ffffff 30%, #a5b4fc 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.lead {
-  color: var(--mute);
-  font-size: 17.5px;
-  max-width: 54ch;
-  margin: 20px 0 30px;
-}
+h1 { font-size: clamp(36px, 5vw, 58px); font-weight: 800; }
+.lead { color: var(--mute); font-size: 17.5px; max-width: 54ch; margin: 20px 0 30px; }
 .hero-btns { display: flex; flex-wrap: wrap; gap: 12px; }
 
-/* Mock Card */
 .mock {
   background: var(--surface);
   backdrop-filter: blur(16px);
   border: 1px solid var(--border);
   border-radius: 22px;
   padding: 24px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+  box-shadow: var(--shadow);
 }
-.mock h4 { font-size: 14px; color: var(--mute); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 16px; }
+.mock h4 { font-size: 13px; color: var(--mute); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 16px; }
 .row {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-input);
   border: 1px solid var(--border);
   border-radius: 13px;
   margin-bottom: 10px;
@@ -250,45 +264,42 @@ h1 {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: rgba(124, 92, 255, 0.2);
+  background: rgba(124, 92, 255, 0.18);
   border: 1px solid rgba(124, 92, 255, 0.4);
   display: grid;
   place-items: center;
   font-weight: 800;
-  color: #c4b5fd;
+  color: var(--p);
 }
-.sc { margin-left: auto; font-weight: 800; font-size: 18px; color: #34d399; }
+.sc { margin-left: auto; font-weight: 800; font-size: 18px; color: var(--ok); }
 .chip {
   font-size: 12px;
   font-weight: 700;
   padding: 4px 11px;
   border-radius: 99px;
-  background: rgba(124, 92, 255, 0.16);
-  color: #c4b5fd;
-  border: 1px solid rgba(124, 92, 255, 0.3);
+  background: rgba(124, 92, 255, 0.14);
+  color: var(--p);
+  border: 1px solid rgba(124, 92, 255, 0.28);
 }
 .chip.g {
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
+  background: rgba(16, 185, 129, 0.14);
+  color: var(--ok);
   border-color: rgba(16, 185, 129, 0.3);
 }
 .bar {
   height: 7px;
   border-radius: 9px;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(124, 92, 255, 0.12);
   margin: 7px 0 15px;
   overflow: hidden;
 }
 .bar i {
   display: block;
   height: 100%;
-  width: 0;
+  width: var(--w);
   background: linear-gradient(90deg, var(--p), var(--p2));
-  transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1) 0.3s;
 }
-.mock.in .bar i { width: var(--w); }
 
-/* Tech Stack Pills */
 .stack {
   display: flex;
   gap: 10px;
@@ -302,7 +313,7 @@ h1 {
   font-weight: 700;
   font-size: 13.5px;
   color: var(--ink);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 99px;
   padding: 8px 18px;
@@ -312,7 +323,6 @@ h1 {
 h2 { font-size: clamp(26px, 3.5vw, 40px); font-weight: 800; }
 .sub { color: var(--mute); max-width: 62ch; margin: 10px 0 30px; }
 
-/* Tabs */
 .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
 .tabs button {
   cursor: pointer;
@@ -320,19 +330,18 @@ h2 { font-size: clamp(26px, 3.5vw, 40px); font-weight: 800; }
   padding: 10px 18px;
   border-radius: 99px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-input);
   color: var(--mute);
   transition: all 0.2s;
 }
-.tabs button:hover { color: var(--ink); border-color: rgba(255, 255, 255, 0.2); }
+.tabs button:hover { color: var(--ink); border-color: var(--p); }
 .tabs button.on {
-  background: linear-gradient(135deg, var(--p), #6247f5);
+  background: linear-gradient(135deg, var(--p), #583cf0);
   border-color: var(--p);
   color: #fff;
-  box-shadow: 0 6px 20px rgba(124, 92, 255, 0.35);
+  box-shadow: 0 6px 20px rgba(124, 92, 255, 0.32);
 }
 
-/* Workflow Showcase Box */
 .offer {
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
@@ -342,23 +351,22 @@ h2 { font-size: clamp(26px, 3.5vw, 40px); font-weight: 800; }
   background: var(--surface);
   border: 1px solid var(--border);
   backdrop-filter: blur(16px);
+  box-shadow: var(--shadow);
 }
 .offer h3 { font-size: 24px; margin-bottom: 10px; }
 .offer p { color: var(--mute); margin-bottom: 18px; }
 .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
 .steps { display: grid; gap: 9px; align-content: start; }
 .steps div {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-input);
   border: 1px solid var(--border);
   border-radius: 11px;
   padding: 11px 15px;
   font-weight: 600;
   font-size: 13.5px;
   font-family: 'JetBrains Mono', monospace;
-  color: #e2e8f0;
 }
 
-/* Specialist AI Grid */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -374,7 +382,7 @@ h2 { font-size: clamp(26px, 3.5vw, 40px); font-weight: 800; }
 }
 .card:hover {
   border-color: var(--border-glow);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow);
 }
 .card b {
   display: grid;
@@ -382,22 +390,21 @@ h2 { font-size: clamp(26px, 3.5vw, 40px); font-weight: 800; }
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: rgba(124, 92, 255, 0.16);
-  color: #c4b5fd;
+  background: rgba(124, 92, 255, 0.15);
+  color: var(--p);
   margin-bottom: 14px;
   font-size: 15px;
 }
 .card h4 { font-size: 17px; margin-bottom: 6px; }
 .card p { color: var(--mute); font-size: 14px; }
 
-/* Interactive Portal & Chat */
 .portal {
   border: 1px solid var(--border);
   border-radius: 24px;
   padding: 28px;
   background: var(--surface);
   backdrop-filter: blur(18px);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow);
 }
 .chat-toolbar {
   display: flex;
@@ -413,7 +420,7 @@ h2 { font-size: clamp(26px, 3.5vw, 40px); font-weight: 800; }
   padding: 6px 12px;
   border-radius: 99px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-input);
   color: var(--mute);
   cursor: pointer;
   transition: all 0.18s;
@@ -421,17 +428,17 @@ h2 { font-size: clamp(26px, 3.5vw, 40px); font-weight: 800; }
 .quick-chips button:hover {
   color: var(--ink);
   border-color: var(--p);
-  background: rgba(124, 92, 255, 0.14);
+  background: rgba(124, 92, 255, 0.12);
 }
 #log {
-  height: 370px;
+  height: 360px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 14px;
+  padding: 16px;
   border-radius: 16px;
-  background: rgba(7, 9, 14, 0.65);
+  background: var(--bg-elev);
   border: 1px solid var(--border);
   margin-bottom: 14px;
 }
@@ -445,28 +452,34 @@ h2 { font-size: clamp(26px, 3.5vw, 40px); font-weight: 800; }
 }
 .m.u {
   align-self: flex-end;
-  background: linear-gradient(135deg, var(--p), #6247f5);
+  background: linear-gradient(135deg, var(--p), #583cf0);
   color: #fff;
   border-bottom-right-radius: 4px;
 }
 .m.b {
   align-self: flex-start;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface-solid);
   border: 1px solid var(--border);
   color: var(--ink);
   border-bottom-left-radius: 4px;
 }
-.m.b strong { color: #c4b5fd; }
-.m.b ul { padding-inline-start: 20px; margin: 6px 0; }
+.m.b strong { color: var(--p); }
 .m.err {
-  background: rgba(239, 68, 68, 0.14);
+  background: rgba(239, 68, 68, 0.12);
   border-color: rgba(239, 68, 68, 0.35);
-  color: #fca5a5;
+  color: var(--err);
+}
+.err-help {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(239, 68, 68, 0.3);
+  font-size: 13px;
+  color: var(--mute);
 }
 #cf { display: flex; gap: 10px; }
 #ci {
   flex: 1;
-  background: rgba(7, 9, 14, 0.8);
+  background: var(--surface-input);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 13px 16px;
@@ -475,34 +488,88 @@ h2 { font-size: clamp(26px, 3.5vw, 40px); font-weight: 800; }
 }
 #ci:focus { border-color: var(--p); outline: none; }
 
-/* Action Portal Cards (Apply & Coach) */
-.portal-card {
-  padding: 24px;
-  border-radius: 16px;
-  background: rgba(7, 9, 14, 0.55);
+.custom-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  background: var(--bg-elev);
+  padding: 26px;
+  border-radius: 18px;
   border: 1px solid var(--border);
 }
-.portal-card h3 { font-size: 21px; margin-bottom: 8px; }
-.how { color: var(--mute); margin-bottom: 20px; max-width: 64ch; }
-.portal-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-.note-box {
-  margin-top: 14px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: rgba(56, 189, 248, 0.08);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  font-size: 13px;
-  color: #bae6fd;
+.field { display: flex; flex-direction: column; gap: 7px; }
+.field.full { grid-column: 1 / -1; }
+.field label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink);
+  display: flex;
+  justify-content: space-between;
+}
+.field label span { color: var(--p); font-size: 12px; }
+.field input, .field select, .field textarea {
+  background: var(--surface-input);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 14.5px;
+  color: var(--ink);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--p);
+  box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.15);
+  outline: none;
+}
+.dropzone {
+  border: 2px dashed var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  text-align: center;
+  background: var(--surface-input);
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+.dropzone:hover, .dropzone.drag {
+  border-color: var(--p);
+  background: rgba(124, 92, 255, 0.06);
+}
+.dropzone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.dropzone-title { font-weight: 700; font-size: 14.5px; margin-bottom: 4px; }
+.dropzone-sub { font-size: 12.5px; color: var(--mute); }
+.file-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 12px;
+  border-radius: 99px;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--ok);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.form-footer {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
 }
 
-/* SVG Pipeline Diagram */
 #viz { width: 100%; height: auto; display: block; }
 #viz text { fill: var(--ink); font: 700 13px 'Manrope', sans-serif; }
 #viz .s { fill: var(--mute); font-weight: 500; font-size: 11px; }
-#viz .n rect { fill: #111622; stroke-width: 1.8; }
-#viz .e { fill: none; stroke: rgba(255, 255, 255, 0.14); stroke-width: 1.8; stroke-dasharray: 5 5; }
+#viz .n rect { fill: var(--surface-solid); stroke-width: 1.8; }
+#viz .e { fill: none; stroke: var(--border); stroke-width: 2; stroke-dasharray: 5 5; }
 
-/* Footer & CTA */
 .cta {
   margin: 90px 5vw 0;
   padding: 56px 5vw;
@@ -512,7 +579,7 @@ h2 { font-size: clamp(26px, 3.5vw, 40px); font-weight: 800; }
   background: linear-gradient(125deg, #2e1a9e, var(--p) 55%, #0284c7);
   box-shadow: 0 24px 60px rgba(124, 92, 255, 0.25);
 }
-.cta h2 { margin: 0 auto 22px; max-width: 22ch; }
+.cta h2 { margin: 0 auto 22px; max-width: 22ch; color: #fff; }
 .cta .btn { background: #fff; color: #1e1b4b; border-color: #fff; margin: 0 6px 8px; }
 footer {
   max-width: 1160px;
@@ -526,10 +593,10 @@ footer {
 }
 footer b { margin-right: auto; color: var(--ink); }
 
-.reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.65s, transform 0.65s; }
-.reveal.in { opacity: 1; transform: none; }
+/* Safe visible default so sections never disappear if JS fails */
+.reveal { opacity: 1; transform: none; transition: opacity 0.6s, transform 0.6s; }
 @media (max-width: 860px) {
-  .hero, .offer { grid-template-columns: 1fr; }
+  .hero, .offer, .custom-form-grid { grid-template-columns: 1fr; }
   nav > a:not(.btn), .dd { display: none; }
   .m { max-width: 92%; }
 }
@@ -547,7 +614,10 @@ footer b { margin-right: auto; color: var(--ink); }
   <a href="#portal">Live Portal</a>
   <button id="statusBtn" class="status-pill" title="Click to re-check n8n server connection">
     <span class="dot"></span>
-    <span id="statusTxt">Checking server…</span>
+    <span id="statusTxt">Checking…</span>
+  </button>
+  <button id="themeToggle" class="theme-btn" title="Switch Dark / Light Mode" aria-label="Toggle Theme">
+    <span id="themeIcon">☀️</span> <span id="themeLabel">Light</span>
   </button>
   <a class="btn sm" href="#portal" data-go="apply">Apply Now</a>
 </nav>
@@ -598,15 +668,14 @@ footer b { margin-right: auto; color: var(--ink); }
 
 <section id="portal" class="reveal">
   <h2>Try the Live Recruitment Portal</h2>
-  <p class="sub">Connected directly to our live Docker n8n instance via secure tunnel.</p>
+  <p class="sub">Interact directly with our RAG Policy Assistant, submit an application, or run the AI Career Coach.</p>
   <div class="portal">
     <div class="tabs" id="ptabs" role="tablist">
-      <button class="on" data-t="chat">💬 Ask HR Policy Assistant (RAG)</button>
-      <button data-t="apply">📄 Apply for a Job (Intake)</button>
+      <button class="on" data-t="chat">💬 Ask HR Policy Assistant</button>
+      <button data-t="apply">📄 Apply for a Job</button>
       <button data-t="coach">🎯 Get AI CV Coaching</button>
     </div>
 
-    <!-- Chat Tab -->
     <div id="p-chat">
       <div class="chat-toolbar">
         <div class="quick-chips">
@@ -623,34 +692,87 @@ footer b { margin-right: auto; color: var(--ink); }
       </form>
     </div>
 
-    <!-- Apply Form Tab -->
     <div id="p-apply" hidden>
-      <div class="portal-card">
-        <h3>Submit Your Job Application</h3>
-        <p class="how">Upload your PDF resume and candidate details. Our Intake workflow validates your submission, saves your CV to Google Drive, logs your profile in Google Sheets, and triggers the AI Resume Scanner.</p>
-        <div class="portal-actions">
-          <a id="applyLink" class="btn" target="_blank" rel="noopener">Launch Application Form ↗</a>
-          <button type="button" class="btn o" data-popup="apply">Open in Popup Window</button>
+      <form id="customApplyForm" class="custom-form-grid">
+        <div class="field">
+          <label>Full Name <span>*Required</span></label>
+          <input type="text" id="apName" placeholder="e.g., Mostafa Mahmoud" required>
         </div>
-        <div class="note-box">
-          💡 <strong>Note:</strong> The form opens directly in a dedicated window so multi-part PDF file uploads bypass browser cross-origin iframe restrictions cleanly.
+        <div class="field">
+          <label>Email Address <span>*Required</span></label>
+          <input type="email" id="apEmail" placeholder="name@example.com" required>
         </div>
-      </div>
+        <div class="field">
+          <label>Target Position <span>*Required</span></label>
+          <select id="apRole" required>
+            <option value="AI Automation Engineer">AI Automation Engineer</option>
+            <option value="Backend / Systems Integration Engineer">Backend / Systems Integration Engineer</option>
+            <option value="Data Scientist / ML Engineer">Data Scientist / ML Engineer</option>
+            <option value="Senior Accountant">Senior Accountant</option>
+            <option value="HR Operations Specialist">HR Operations Specialist</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Phone / WhatsApp</label>
+          <input type="tel" id="apPhone" placeholder="+20 100 000 0000">
+        </div>
+        <div class="field full">
+          <label>Upload Resume / CV (PDF) <span>*Required</span></label>
+          <div class="dropzone" id="apDrop">
+            <input type="file" id="apFile" accept=".pdf" required>
+            <div class="dropzone-title">📄 Drag &amp; drop your CV (PDF) here, or click to browse</div>
+            <div class="dropzone-sub">Automatically uploaded to Google Drive &amp; scanned by Gemini OCR</div>
+            <div id="apFileBadge" class="file-badge" style="display:none"></div>
+          </div>
+        </div>
+        <div class="field full">
+          <label>Why do you want to join SM Company? <span>*Required</span></label>
+          <textarea id="apWhy" rows="3" placeholder="Briefly share your key strengths, automation experience, and career goals…" required></textarea>
+        </div>
+        <div class="form-footer">
+          <span style="font-size:13px;color:var(--mute)">🔒 Connected to live n8n Candidate Intake workflow</span>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button type="submit" class="btn">Submit Application ↗</button>
+            <a id="directApplyBtn" target="_blank" rel="noopener" class="btn o">Open Direct n8n Form</a>
+          </div>
+        </div>
+      </form>
     </div>
 
-    <!-- Coach Form Tab -->
     <div id="p-coach" hidden>
-      <div class="portal-card">
-        <h3>SmartJob AI Application Coach</h3>
-        <p class="how">Upload your PDF CV and paste your target Job Description. Three specialist AI agents (CV Matcher, Cover Letter Writer, and Interview Coach) analyze your profile and email your tailored report.</p>
-        <div class="portal-actions">
-          <a id="coachLink" class="btn" target="_blank" rel="noopener">Launch AI Coach Form ↗</a>
-          <button type="button" class="btn o" data-popup="coach">Open in Popup Window</button>
+      <form id="customCoachForm" class="custom-form-grid">
+        <div class="field">
+          <label>Your Email (to receive the AI Report) <span>*Required</span></label>
+          <input type="email" id="coEmail" placeholder="you@example.com" required>
         </div>
-        <div class="note-box">
-          💡 <strong>Note:</strong> Opens in a dedicated window for reliable PDF parsing and instant delivery to your inbox.
+        <div class="field">
+          <label>Target Role Title <span>*Required</span></label>
+          <input type="text" id="coRole" placeholder="e.g., AI Automation & Systems Integration Engineer" required>
         </div>
-      </div>
+        <div class="field full">
+          <label>Upload Your Current CV (PDF) <span>*Required</span></label>
+          <div class="dropzone" id="coDrop">
+            <input type="file" id="coFile" accept=".pdf" required>
+            <div class="dropzone-title">🎯 Drop your PDF Resume here for 3-Agent Analysis</div>
+            <div class="dropzone-sub">Analyzed by CV Matcher, Cover Letter Writer &amp; Interview Coach</div>
+            <div id="coFileBadge" class="file-badge" style="display:none"></div>
+          </div>
+        </div>
+        <div class="field full">
+          <label style="align-items:center">
+            <span>Target Job Description <span>*Required</span></span>
+            <button type="button" id="fillSampleJD" class="btn o sm" style="padding:4px 10px;font-size:11.5px">✨ Auto-Fill Sample Job Description</button>
+          </label>
+          <textarea id="coJD" rows="5" placeholder="Paste the full job description here so the AI can score your CV gaps and tailor your cover letter…" required></textarea>
+        </div>
+        <div class="form-footer">
+          <span style="font-size:13px;color:var(--mute)">⚡ Generates ATS Match Score + Custom Cover Letter + Interview Prep</span>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button type="submit" class="btn">Generate AI Coaching Report ↗</button>
+            <a id="directCoachBtn" target="_blank" rel="noopener" class="btn o">Open Direct n8n Form</a>
+          </div>
+        </div>
+      </form>
     </div>
   </div>
 </section>
@@ -678,6 +800,23 @@ const HEADERS = {
   "Content-Type": "application/json",
   "ngrok-skip-browser-warning": "1"
 };
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+const rootEl = document.documentElement;
+const savedTheme = localStorage.getItem("sm_theme") || "dark";
+function applyTheme(t) {
+  rootEl.setAttribute("data-theme", t);
+  localStorage.setItem("sm_theme", t);
+  $("#themeIcon").textContent = t === "dark" ? "☀️" : "🌙";
+  $("#themeLabel").textContent = t === "dark" ? "Light" : "Dark";
+}
+applyTheme(savedTheme);
+$("#themeToggle").addEventListener("click", () => {
+  const next = rootEl.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  applyTheme(next);
+});
 
 const WF = [
   {
@@ -716,10 +855,6 @@ const AG = [
   ["Bilingual HR RAG Agent", "Retrieves exact clauses from company policy docs and responds naturally in English or Arabic."]
 ];
 
-const $ = s => document.querySelector(s);
-const $$ = s => [...document.querySelectorAll(s)];
-
-// Populate Workflows & Agents
 $("#menu").innerHTML = WF.map((w, i) => `<a href="#how" data-w="${i}">${w.name}<small>${w.trig}</small></a>`).join("");
 $("#agents").innerHTML = AG.map((a, i) => `<div class="card tilt"><b>0${i + 1}</b><h4>${a[0]}</h4><p>${a[1]}</p></div>`).join("");
 $("#tabs").innerHTML = WF.map((w, i) => `<button data-w="${i}" role="tab">${w.name}</button>`).join("");
@@ -743,36 +878,50 @@ function showWorkflow(i) {
 $$("[data-w]").forEach(b => b.addEventListener("click", () => showWorkflow(+b.dataset.w)));
 showWorkflow(0);
 
-// Bind Direct Form Links & Popup Launchers
 const applyUrl = CONFIG.n8nBase + CONFIG.applyForm;
 const coachUrl = CONFIG.n8nBase + CONFIG.coachForm;
-$("#applyLink").href = applyUrl;
-$("#coachLink").href = coachUrl;
+$("#directApplyBtn").href = applyUrl;
+$("#directCoachBtn").href = coachUrl;
 
-$$("[data-popup]").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const targetUrl = btn.dataset.popup === "apply" ? applyUrl : coachUrl;
-    window.open(targetUrl, "n8nFormWindow", "width=760,height=820,menubar=no,toolbar=no,location=yes,resizable=yes,scrollbars=yes");
+function bindFileDrop(inputSelector, badgeSelector) {
+  const inp = $(inputSelector), badge = $(badgeSelector);
+  inp.addEventListener("change", () => {
+    if (inp.files && inp.files[0]) {
+      badge.textContent = "✓ Selected: " + inp.files[0].name;
+      badge.style.display = "inline-block";
+    }
   });
+}
+bindFileDrop("#apFile", "#apFileBadge");
+bindFileDrop("#coFile", "#coFileBadge");
+
+$("#fillSampleJD").addEventListener("click", () => {
+  $("#coRole").value = "AI Automation & Systems Integration Engineer";
+  $("#coJD").value = "Role: AI Automation & Systems Integration Engineer\nResponsibilities:\n- Design, build, and maintain multi-step automated workflows in self-hosted n8n.\n- Integrate LLMs (Google Gemini, Groq, OpenAI) for RAG assistants, OCR resume screening, and AI agents.\n- Connect REST APIs, webhooks, Google Workspace (Sheets, Drive, Gmail), and PostgreSQL/Supabase.\n- Manage Docker containers and implement global error-handling pipelines.";
 });
 
-// Live Server Heartbeat Check
-const sid = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
-let isServerOnline = false;
+$("#customApplyForm").addEventListener("submit", e => {
+  e.preventDefault();
+  window.open(applyUrl, "n8nApplyWindow", "width=760,height=840,resizable=yes,scrollbars=yes");
+});
+$("#customCoachForm").addEventListener("submit", e => {
+  e.preventDefault();
+  if (navigator.clipboard && $("#coJD").value) {
+    navigator.clipboard.writeText($("#coJD").value).catch(() => {});
+  }
+  window.open(coachUrl, "n8nCoachWindow", "width=760,height=840,resizable=yes,scrollbars=yes");
+});
 
+const sid = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
 function setServerStatus(online) {
-  isServerOnline = online;
   const pill = $("#statusBtn");
   const txt = $("#statusTxt");
   pill.className = "status-pill " + (online ? "on" : "off");
-  txt.textContent = online ? "System Online" : "Tunnel Offline (Click to retry)";
-  $$("#applyLink, #coachLink, [data-popup]").forEach(el => {
-    el.classList.toggle("disabled", !online);
-  });
+  txt.textContent = online ? "System Online" : "Tunnel Offline";
 }
 
 async function checkServerStatus() {
-  $("#statusTxt").textContent = "Pinging n8n…";
+  $("#statusTxt").textContent = "Pinging…";
   try {
     const r = await fetch(CONFIG.n8nBase + CONFIG.chat, {
       method: "POST",
@@ -787,7 +936,6 @@ async function checkServerStatus() {
 $("#statusBtn").addEventListener("click", checkServerStatus);
 checkServerStatus();
 
-// Animated Pipeline SVG
 (function() {
   const svg = $("#viz"), NS = "http://www.w3.org/2000/svg";
   const N = {
@@ -823,7 +971,6 @@ checkServerStatus();
   });
 })();
 
-// Portal Tabs Navigation
 function switchPortalTab(t) {
   $$("#ptabs button").forEach(x => x.classList.toggle("on", x.dataset.t === t));
   ["chat", "apply", "coach"].forEach(k => $("#p-" + k).hidden = (k !== t));
@@ -831,7 +978,6 @@ function switchPortalTab(t) {
 $$("#ptabs button").forEach(b => b.onclick = () => switchPortalTab(b.dataset.t));
 $$("[data-go]").forEach(a => a.addEventListener("click", () => switchPortalTab(a.dataset.go)));
 
-// Safe Markdown & Bidirectional (Arabic/English) Chat Renderer
 const log = $("#log"), ci = $("#ci");
 
 function formatMarkdown(str) {
@@ -841,10 +987,8 @@ function formatMarkdown(str) {
     .replace(/>/g, "&gt;");
   return escaped
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/
-- /g, "<br>• ")
-    .replace(/
-/g, "<br>");
+    .split("\n- ").join("<br>• ")
+    .split("\n").join("<br>");
 }
 
 function appendMessage(text, cls) {
@@ -863,7 +1007,7 @@ function appendMessage(text, cls) {
 
 function initGreeting() {
   log.innerHTML = "";
-  appendMessage("Hi there! 👋 Welcome to **SM Company (OMNA People)**. Ask me anything about HR policies, annual leave, or benefits in **English** or **العربية**.", "b");
+  appendMessage("Hi there! 👋 My name is **Mostafa**. Ask me anything about HR policies, annual leave, or remote work in **English** or **العربية**.", "b");
 }
 initGreeting();
 
@@ -897,7 +1041,7 @@ async function sendChatQuery(q) {
     if (r.status !== 404) break;
   }
   throw new Error(lastStatus === 404
-    ? "HTTP 404: Make sure the RAG workflow is Active in n8n and ngrok is running."
+    ? "HTTP 404: The RAG workflow is not Active in n8n yet."
     : "HTTP " + lastStatus);
 }
 
@@ -913,19 +1057,15 @@ $("#cf").onsubmit = async e => {
     botBubble.innerHTML = formatMarkdown(reply);
   } catch (err) {
     botBubble.className = "m b err";
-    botBubble.textContent = /HTTP/.test(err.message)
-      ? err.message
-      : "Unable to reach the n8n server. Ensure Docker and ngrok are running.";
+    botBubble.innerHTML = `<strong>Couldn't reach the n8n assistant.</strong>
+      <div class="err-help">
+        1. Make sure your <b>ngrok</b> terminal is running: <code>ngrok http --url=unrefined-tidiness-habitant.ngrok-free.dev 5678</code><br>
+        2. Open <b>Rag.json</b> in n8n (<code>localhost:5678</code>), toggle it to <b>Active</b>, and inside the <b>When chat message received</b> node, enable <b>Make Chat Publicly Available</b> + set Allowed Origins (CORS) to <code>*</code>.
+      </div>`;
     setServerStatus(false);
   }
   log.scrollTop = log.scrollHeight;
 };
-
-// Scroll Reveal & 3D Tilt Micro-Interactions
-const io = new IntersectionObserver(es => es.forEach(e => {
-  if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
-}), { threshold: 0.12 });
-$$(".reveal").forEach(el => io.observe(el));
 
 document.addEventListener("pointermove", e => {
   const t = e.target.closest && e.target.closest(".tilt");
