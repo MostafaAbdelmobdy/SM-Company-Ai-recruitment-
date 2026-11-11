@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SM Company (AI Recruitment)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07090e;--ink:#e8ecf5;--mute:#8d97ad;--blue:#4f8cff;--em:#2dd4a7;--vio:#8b5cf6;--glass:rgba(255,255,255,.04);--line:rgba(255,255,255,.09);--mx:50%;--my:50%}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.6 Figtree,system-ui,sans-serif;overflow-x:hidden}
+h1,h2,h3{font-family:Manrope,system-ui,sans-serif;line-height:1.12;letter-spacing:-.025em}
+#bg{position:fixed;inset:0;z-index:-1}
+nav{position:sticky;top:0;z-index:20;display:flex;gap:6px;align-items:center;padding:12px 5vw;backdrop-filter:blur(16px);background:rgba(7,9,14,.6);border-bottom:1px solid var(--line)}
+nav .brand{display:flex;align-items:center;gap:10px;font-weight:700}nav .brand i{font-style:normal;font-size:12px;font-weight:800;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:linear-gradient(135deg,var(--blue),var(--vio))}nav .brand small{color:var(--mute);font-weight:500;font-size:14px}nav b{font-family:Manrope,sans-serif;margin-right:auto;font-size:18px}
+nav a{color:var(--mute);text-decoration:none;padding:6px 12px;border-radius:99px;font-size:14px}
+nav a:hover{color:var(--ink);background:var(--glass)}
+section{max-width:1120px;margin:0 auto;padding:90px 5vw 20px}
+.hero{padding-top:110px;text-align:left}
+h1{font-size:clamp(38px,6vw,68px);font-weight:800;max-width:17ch}
+h1 span{display:none;background:linear-gradient(100deg,var(--blue),var(--em) 55%,var(--vio));-webkit-background-clip:text;background-clip:text;color:transparent}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:36px;border-radius:14px}.kpis div{padding:18px 22px;color:var(--mute);font-size:14px;border-right:1px solid var(--line)}.kpis div:last-child{border:0}.kpis b{display:block;font:700 28px Manrope,sans-serif;color:var(--ink)}.lead{color:var(--mute);max-width:56ch;margin:22px 0 32px;font-size:18px}
+h2{font-size:clamp(26px,3.4vw,38px);font-weight:700;margin-bottom:10px}
+.sub{color:var(--mute);max-width:60ch;margin-bottom:32px}
+.glass{background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);border-radius:14px;position:relative}
+.glass::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;background:radial-gradient(260px circle at var(--mx) var(--my),rgba(59,130,246,.9),rgba(16,217,160,.5) 45%,transparent 70%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:0;transition:opacity .3s;pointer-events:none}
+.glass:hover::before{opacity:1}
+.btn{display:inline-block;border:0;cursor:pointer;font:600 15px Manrope,sans-serif;color:#fff;background:var(--blue);padding:12px 22px;border-radius:10px;text-decoration:none;margin:0 10px 10px 0;transition:transform .2s,box-shadow .3s;box-shadow:0 0 0 rgba(16,217,160,0)}
+.btn:hover{box-shadow:0 8px 34px rgba(79,140,255,.4)}
+.btn.alt:hover{border-color:rgba(255,255,255,.25)}.btn.alt{color:var(--ink);background:var(--glass);border:1px solid var(--line)}
+.btn.sm{padding:8px 16px;font-size:13px;margin:0}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+.tilt{transition:transform .15s;transform-style:preserve-3d;will-change:transform}
+.card{padding:24px}
+.card h3{font-size:21px;margin-bottom:4px}
+.tag{display:inline-block;font-size:12px;padding:2px 10px;border-radius:99px;border:1px solid var(--line);color:var(--mute);margin:0 6px 6px 0}
+.tag.ai{color:var(--em);border-color:rgba(16,217,160,.4)}
+.tag.tr{color:#7fb0ff;border-color:rgba(59,130,246,.45)}
+.stat{font:800 34px Manrope,sans-serif;color:var(--blue);margin-right:6px}
+.card p{color:var(--mute);font-size:14.5px;margin:10px 0 16px}
+.card ol{color:var(--mute);font-size:13.5px;padding-left:18px;margin-bottom:16px}
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .8s,transform .8s}
+.reveal.in{opacity:1;transform:none}
+#viz{width:100%;height:auto;display:block}
+#viz text{fill:var(--ink);font:600 13px Manrope,sans-serif}
+#viz .s{fill:var(--mute);font-weight:400;font-size:11px}
+#viz .n rect{fill:rgba(255,255,255,.06);stroke-width:1.4}
+#viz .e{fill:none;stroke:rgba(255,255,255,.16);stroke-width:1.5}
+.pane{padding:22px}
+.tabs{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:12px;background:rgba(0,0,0,.25);margin-bottom:18px;flex-wrap:wrap}
+.tabs button{cursor:pointer}
+.tabs .btn{background:transparent;border:0;color:var(--mute)}.tabs .on{background:rgba(79,140,255,.18);color:var(--ink)}
+#log{height:380px;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:4px 2px 12px}
+.m{max-width:82%;padding:10px 14px;border-radius:16px;white-space:pre-wrap;font-size:15px}
+.m.u{align-self:flex-end;background:var(--blue)}
+.m.b{align-self:flex-start;background:rgba(255,255,255,.07);border:1px solid var(--line)}
+.m.err{color:#ffb4b4;border-color:rgba(255,100,100,.4)}
+#cf{display:flex;gap:10px}
+#ci{flex:1;background:rgba(0,0,0,.35);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:12px 16px;font:inherit}
+.frame{width:100%;height:640px;border:1px solid var(--line);border-radius:16px;background:#fff;margin-top:16px;display:none}
+.how{color:var(--mute);font-size:15px;margin-bottom:6px}
+footer{padding:70px 5vw 50px;text-align:center;color:var(--mute);font-size:14px}
+@media(max-width:640px){nav a:not(.keep){display:none}.m{max-width:94%}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+<nav>
+  <b class="brand"><i>SM</i>SM Company <small>(AI Recruitment)</small></b>
+  <a href="#portal" class="keep">Try it</a><a href="#pipeline">Pipeline</a><a href="#workflows">Workflows</a>
+</nav>
+
+<section class="hero">
+  <h1>AI-powered recruitment, from application to offer.</h1>
+  <p class="lead">SM Company's recruitment platform: candidates apply, an AI screens every CV, a coach improves applications, and an assistant answers HR policy questions in English and Arabic. Try each part below, then see how it's wired.</p>
+  <a class="btn mag" href="#portal">Try the live system</a>
+  <a class="btn alt mag" href="#workflows">Inspect the workflows</a>
+  <div class="glass kpis"><div><b>5</b>automated workflows</div><div><b>84</b>n8n nodes</div><div><b>2</b>languages supported</div><div><b>24/7</b>candidate support</div></div>
+</section>
+
+<section id="portal" class="reveal">
+  <h2>Live portal</h2>
+  <p class="sub">These tools talk to a running n8n server. If one doesn't respond, the server may be offline.</p>
+  <div class="glass pane">
+    <div class="tabs" role="tablist">
+      <button class="btn alt sm on" data-t="chat" role="tab">Ask the HR assistant</button>
+      <button class="btn alt sm" data-t="apply" role="tab">Apply for a job</button>
+      <button class="btn alt sm" data-t="coach" role="tab">Get CV coaching</button>
+    </div>
+    <div id="p-chat">
+      <div id="log" aria-live="polite"></div>
+      <form id="cf"><input id="ci" placeholder="Ask about leave, benefits, policies… (English or العربية)" aria-label="Message" autocomplete="off"><button class="btn sm" type="submit">Send</button></form>
+    </div>
+    <div id="p-apply" hidden>
+      <p class="how">Upload your CV and details. Your application is logged, your CV is stored, and the AI screens it within the hour. You'll get an email with the result.</p>
+      <button class="btn mag" data-open="apply">Open application form</button>
+    </div>
+    <div id="p-coach" hidden>
+      <p class="how">Upload your CV and paste the job description. Three AI coaches review your CV match, write a cover letter and prepare interview questions, then email you the report.</p>
+      <button class="btn mag" data-open="coach">Open CV coach form</button>
+    </div>
+    <iframe id="fr" class="frame" title="Form"></iframe>
+    <a id="fo" class="btn alt sm" style="display:none;margin-top:12px" target="_blank" rel="noopener">Open in a new tab</a>
+  </div>
+</section>
+
+<section id="pipeline" class="reveal">
+  <h2>How the five workflows connect</h2>
+  <p class="sub">Google Sheets is the shared ledger. Every workflow reads or writes it, and any failure routes to the error handler.</p>
+  <div class="glass pane"><svg id="viz" viewBox="0 0 900 380" role="img" aria-label="Pipeline diagram of the five n8n workflows"></svg></div>
+</section>
+
+<section id="workflows" class="reveal">
+  <h2>Workflow inspector</h2>
+  <p class="sub">Node names and models below come from the exported n8n files.</p>
+  <div class="grid" id="cards"></div>
+</section>
+
+<footer>SM Company (AI Recruitment) · Built on n8n, Google Workspace, Gemini and Groq</footer>
+
+<script>
+const CONFIG = {
+  n8nBase: "https://unrefined-tidiness-habitant.ngrok-free.dev",
+  chat: "/webhook/70152671-d468-4bec-826c-e497a6326aa8/chat",
+  applyForm: "/form/dcdf3cf5-cdc0-4137-82c3-8aaa30465da0",
+  coachForm: "/form/e35fbb40-2371-4908-acc0-6bb7e1f52f79"
+};
+const HEADERS = { "Content-Type": "application/json", "ngrok-skip-browser-warning": "1" };
+
+const WF = [
+ {id:"intake",file:"intake.json",name:"Candidate intake",nodes:11,trig:"Form trigger",ai:"None",c:"#3b82f6",
+  d:"Collects the application and PDF CV, checks for duplicates, stores the CV in Drive and logs the row in Sheets.",
+  s:["On form submission","Code in JavaScript","If","Get row(s) in sheet","Upload file","Append row in sheet","Form2 (confirmation)"]},
+ {id:"scan",file:"AI scan.json",name:"AI resume screening",nodes:30,trig:"Every hour + manual",ai:"Gemini 3.1 Flash-Lite, Gemini 2.5 Flash-Lite, Groq gpt-oss-120b",c:"#10d9a0",
+  d:"Pulls new applications, reads each CV (OCR fallback for scans), extracts a profile, scores it, then emails the candidate and HR.",
+  s:["Get New Applications","Loop Over Items","Extract from File / OCR Scanned CV","Extract Candidate Profile","Evaluation Schema (Auto-fix)","Validate Evaluation","Switch → invite / brief HR / flag borderline","Update row in sheet"]},
+ {id:"coach",file:"SmartJob Application Coach.json",name:"SmartJob application coach",nodes:14,trig:"Form trigger",ai:"Gemini 3.1 Flash-Lite, Groq gpt-oss-120b ×3",c:"#8b5cf6",
+  d:"An orchestrator agent calls three specialist tools and emails a formatted coaching report.",
+  s:["Job application form","Read CV (Gemini)","Career Coach Orchestrator","CV Matcher · cover letter · interview coach","Markdown","Send a message"]},
+ {id:"rag",file:"Rag.json",name:"HR policy RAG assistant",nodes:11,trig:"Chat trigger + upload form",ai:"Gemini Flash-Lite, Gemini embeddings",c:"#4cc9f0",
+  d:"Upload documents into an in-memory vector store; the chat agent searches it with a 6-message memory window.",
+  s:["upload files","Recursive Character Text Splitter","Default Data Loader","Simple Vector Store","When chat message received","AI Agent + Simple Memory"]},
+ {id:"err",file:"Error Handling.json",name:"Global error handler",nodes:18,trig:"Error trigger + 2 schedules",ai:"None",c:"#f59e0b",
+  d:"Classifies failures, throttles repeat alerts, flags stuck applications and sends a digest by email.",
+  s:["Error Trigger","classify Error","check Throttle","Find Stuck Applications","Build Digest","Send a message","Append row in sheet"]}
+];
+
+/* cards */
+const cards=document.getElementById("cards");
+WF.forEach(w=>{
+  const el=document.createElement("article");
+  el.className="glass card tilt";
+  el.innerHTML=`<span class="stat" style="color:${w.c}">${w.nodes}</span>nodes
+   <h3>${w.name}</h3>
+   <span class="tag tr">${w.trig}</span><span class="tag ai">${w.ai}</span>
+   <p>${w.d}</p><ol>${w.s.map(x=>`<li>${x}</li>`).join("")}</ol>
+   <a class="btn alt sm mag" href="./${encodeURIComponent(w.file)}" download="${w.file}">Download ${w.file}</a>`;
+  cards.appendChild(el);
+});
+
+/* pipeline */
+(function(){
+  const svg=document.getElementById("viz"),NS="http://www.w3.org/2000/svg";
+  const N={intake:[110,70,"Candidate intake","Form → Drive + Sheets"],sheet:[450,190,"Google Sheets","Shared ledger"],scan:[790,70,"AI screening","Gemini + Groq → Gmail"],
+    coach:[110,310,"Application coach","Agent + 3 tools"],rag:[450,330,"HR policy assistant","RAG chat"],err:[790,310,"Error handler","Alerts + digest"]};
+  const col={intake:"#3b82f6",sheet:"#8d97ad",scan:"#10d9a0",coach:"#8b5cf6",rag:"#4cc9f0",err:"#f59e0b"};
+  const E=[["intake","sheet"],["sheet","scan"],["scan","err"],["coach","err"],["rag","err"]];
+  const mk=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e};
+  E.forEach(([a,b],i)=>{
+    const [x1,y1]=N[a],[x2,y2]=N[b],mx=(x1+x2)/2;
+    const p=mk("path",{id:"p"+i,class:"e",d:`M${x1} ${y1}C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}`});svg.appendChild(p);
+    for(let k=0;k<2;k++){
+      const c=mk("circle",{r:4.5,fill:col[a],style:`filter:drop-shadow(0 0 6px ${col[a]})`});
+      const m=mk("animateMotion",{dur:(3.4+i*.4)+"s",begin:(k*1.7)+"s",repeatCount:"indefinite"});
+      m.appendChild(mk("mpath",{href:"#p"+i}));c.appendChild(m);svg.appendChild(c);
+    }
+  });
+  Object.entries(N).forEach(([k,[x,y,t,s]])=>{
+    const g=mk("g",{class:"n"});
+    g.appendChild(mk("rect",{x:x-80,y:y-30,width:160,height:60,rx:14,stroke:col[k]}));
+    const a=mk("text",{x,y:y-3,"text-anchor":"middle"});a.textContent=t;
+    const b=mk("text",{x,y:y+15,"text-anchor":"middle",class:"s"});b.textContent=s;
+    g.append(a,b);svg.appendChild(g);
+  });
+})();
+
+/* tabs and forms */
+const fr=document.getElementById("fr"),fo=document.getElementById("fo");
+document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("[data-t]").forEach(x=>x.classList.toggle("on",x===b));
+  ["chat","apply","coach"].forEach(t=>document.getElementById("p-"+t).hidden=t!==b.dataset.t);
+  fr.style.display=fo.style.display="none";fr.removeAttribute("src");
+});
+document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{
+  const u=CONFIG.n8nBase+(b.dataset.open==="apply"?CONFIG.applyForm:CONFIG.coachForm)+"?ngrok-skip-browser-warning=1";
+  fr.src=u;fo.href=u;fr.style.display="block";fo.style.display="inline-block";fr.scrollIntoView({behavior:"smooth",block:"center"});
+});
+
+/* chat */
+const log=document.getElementById("log"),ci=document.getElementById("ci");
+const sid=(crypto.randomUUID?crypto.randomUUID():String(Date.now()));
+function say(t,c){const d=document.createElement("div");d.className="m "+c;d.textContent=t;log.appendChild(d);log.scrollTop=log.scrollHeight;return d}
+say("Hi there! 👋 My name is Mostafa. How can I assist you today?","b");
+document.getElementById("cf").onsubmit=async e=>{
+  e.preventDefault();const q=ci.value.trim();if(!q)return;ci.value="";say(q,"u");
+  const w=say("Thinking…","b");
+  try{
+    const r=await fetch(CONFIG.n8nBase+CONFIG.chat,{method:"POST",headers:HEADERS,body:JSON.stringify({action:"sendMessage",sessionId:sid,chatInput:q})});
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    const j=await r.json();w.textContent=j.output||j.text||"No answer came back. Try rephrasing your question.";
+  }catch(x){w.className="m b err";w.textContent="Couldn't reach the assistant ("+x.message+"). Check that the n8n server is running and try again."}
+  log.scrollTop=log.scrollHeight;
+};
+
+/* reveal */
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target)}}),{threshold:.12});
+document.querySelectorAll(".reveal").forEach(el=>io.observe(el));
+
+/* spotlight + tilt + magnetic */
+document.addEventListener("pointermove",e=>{
+  const g=e.target.closest&&e.target.closest(".glass");
+  if(g){const r=g.getBoundingClientRect();g.style.setProperty("--mx",e.clientX-r.left+"px");g.style.setProperty("--my",e.clientY-r.top+"px")}
+  const t=e.target.closest&&e.target.closest(".tilt");
+  if(t){const r=t.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+    t.style.transform=`perspective(800px) rotateX(${-y*3}deg) rotateY(${x*4}deg)`}
+});
+document.querySelectorAll(".tilt").forEach(t=>t.addEventListener("pointerleave",()=>t.style.transform=""));
+document.querySelectorAll(".mag").forEach(m=>{
+  m.addEventListener("pointermove",e=>{const r=m.getBoundingClientRect();m.style.transform=`translate(${(e.clientX-r.left-r.width/2)*.2}px,${(e.clientY-r.top-r.height/2)*.3}px)`});
+  m.addEventListener("pointerleave",()=>m.style.transform="");
+});
+
+/* aurora mesh canvas */
+(function(){
+  const cv=document.getElementById("bg"),x=cv.getContext("2d");
+  const B=[["59,130,246",.25,.2],["16,217,160",.75,.35],["139,92,246",.45,.8]].map((b,i)=>({c:b[0],x:b[1],y:b[2],p:i*2}));
+  let W,H;const rs=()=>{W=cv.width=innerWidth;H=cv.height=innerHeight};rs();addEventListener("resize",rs);
+  const still=matchMedia("(prefers-reduced-motion:reduce)").matches;
+  (function f(t){
+    x.fillStyle="#07090e";x.fillRect(0,0,W,H);
+    B.forEach(b=>{
+      const px=(b.x+Math.sin(t/6000+b.p)*.12)*W,py=(b.y+Math.cos(t/7000+b.p)*.12)*H,r=Math.max(W,H)*.45;
+      const g=x.createRadialGradient(px,py,0,px,py,r);g.addColorStop(0,`rgba(${b.c},.11)`);g.addColorStop(1,`rgba(${b.c},0)`);
+      x.fillStyle=g;x.fillRect(0,0,W,H);
+    });
+    if(!still)requestAnimationFrame(f);
+  })(0);
+})();
+</script>
+</body>
+</html>

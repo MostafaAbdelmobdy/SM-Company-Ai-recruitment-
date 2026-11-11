@@ -1,0 +1,888 @@
+﻿{
+  "name": "Error Handling",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -512,
+        -176
+      ],
+      "id": "18cce31b-1cb0-4ded-8ca4-b8205e005a9e",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Turn the raw error into a classified record: what broke, how bad it is, and what to do.\nconst e = $input.first().json;\nconst message = String(e.execution?.error?.message || e.trigger?.error?.message || 'No error message');\nconst description = String(e.execution?.error?.description || e.trigger?.error?.description || '');\nconst workflow = e.workflow?.name || 'Unknown workflow';\nconst node = e.execution?.lastNodeExecuted || e.trigger?.node?.name || 'Trigger';\nconst text = (message + ' ' + description).toLowerCase();\n \n// First matching rule wins, so the most specific rules come first.\nconst rules = [\n  { type: 'auth', severity: 'critical',\n    pattern: /401|403|unauthori[sz]ed|forbidden|invalid_grant|invalid credentials|token (has )?expired|reauthori|access denied/,\n    fix: 'Reconnect the credential used by this node (Credentials, then Reconnect), then retry the execution. Retrying alone will not help.' },\n  { type: 'rate_limit', severity: 'warning',\n    pattern: /429|rate limit|too many requests|quota|resource has been exhausted/,\n    fix: 'Temporary. The next scheduled run usually succeeds. If it keeps happening, run the batch less often or upgrade the API plan.' },\n  { type: 'network', severity: 'warning',\n    pattern: /timeout|timed out|etimedout|econnreset|econnrefused|enotfound|socket hang up|\\b50[234]\\b|service unavailable|bad gateway/,\n    fix: 'Temporary network or service problem. Retry the execution; check the service status page if it repeats.' },\n  { type: 'ai_output', severity: 'warning',\n    pattern: /output parser|could not parse|parseable|unexpected token|json|schema/,\n    fix: 'The AI returned an unexpected format. Retry once; if it repeats, tighten the prompt or the output schema.' },\n  { type: 'data', severity: 'critical',\n    pattern: /cannot read propert|undefined|is not defined|not found|no column|missing|invalid syntax|expression|does not exist/,\n    fix: 'Data or workflow bug. Open the execution, find the input that broke this node, fix the data or the expression, then retry.' },\n];\nconst rule = rules.find(r => r.pattern.test(text)) ||\n  { type: 'unknown', severity: 'critical', fix: 'Unrecognised error. Open the execution and read the full error.' };\n \n// Business rule: anything failing in Intake affects candidates directly, so it is always critical.\nconst severity = /intake/i.test(workflow) ? 'critical' : rule.severity;\n \nreturn [{ json: {\n  time: $now.setZone('Africa/Cairo').toFormat('yyyy-MM-dd HH:mm'),\n  epochMinute: Math.floor(Date.now() / 60000),\n  workflow, node, type: rule.type, severity,\n  message: message.slice(0, 500), fix: rule.fix,\n  executionId: String(e.execution?.id ?? ''),\n  executionUrl: e.execution?.url || '',\n  fingerprint: [workflow, node, rule.type].join(' | '),\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -288,
+        -176
+      ],
+      "id": "bd177432-9107-4997-8847-1b6e922f99be",
+      "name": "classify Error"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1BC3qee6Hsr-RWmKyU0gJlTm33L6nmsAVt36-UDJvHsM",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "YOUR_GOOGLE_URL"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Fingerprint",
+              "lookupValue": "={{ $json.fingerprint }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -64,
+        -176
+      ],
+      "id": "c8ee8106-4e88-48e0-8abc-f4ff3db84731",
+      "name": "Get row(s) in sheet",
+      "credentials": {}
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ALERT THROTTLING: one email per problem per hour, not one per failure.\nconst err = $('classify Error').first().json;\nconst WINDOW_MINUTES = 60;\nconst num = v => Number(String(v ?? '').replace(/,/g, ''));\n \nconst alertedRecently = $input.all().some(r =>\n  r.json.Fingerprint === err.fingerprint &&\n  r.json.Alerted === 'yes' &&\n  err.epochMinute - num(r.json['Epoch Minute']) < WINDOW_MINUTES);\n \n// Critical errors email now (unless throttled); warnings wait for the daily digest.\nlet alerted = 'digest only';\nif (err.severity === 'critical') alerted = alertedRecently ? 'throttled' : 'yes';\n \nreturn [{ json: { ...err, alerted, sendNow: alerted === 'yes' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        -176
+      ],
+      "id": "7e77f8df-9762-47a9-a08c-f9a9f7af1f02",
+      "name": "check Throttle"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 2
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -512,
+        208
+      ],
+      "id": "62e09ee2-9c00-408a-91a9-eb91bd18a7f6",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1bXIz-NogZX0Sy-eYaW-p4QZwBCB0RsjUzVPFUHvdENQ",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "YOUR_GOOGLE_URL"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": " Status",
+              "lookupValue": "new"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -288,
+        208
+      ],
+      "id": "2a073ad7-f22a-4c28-a523-9cc8427e21a4",
+      "name": "Get row(s) in sheet1",
+      "credentials": {}
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// HEARTBEAT (dead-man's switch): alerts when nothing happened, which no Error Trigger can see.\n// If applications wait in Status \"new\" for too long, the batch workflow is not running.\nconst MAX_WAIT_HOURS = 3;\nconst now = DateTime.now().setZone('Africa/Cairo');\nconst parse = s => {\n  s = String(s || '').trim();\n  for (const f of ['yyyy-MM-dd HH:mm', 'yyyy-MM-dd HH:mm:ss', 'M/d/yyyy H:mm:ss', 'M/d/yyyy H:mm']) {\n    const d = DateTime.fromFormat(s, f, { zone: 'Africa/Cairo' });\n    if (d.isValid) return d;\n  }\n  const t = Date.parse(s);\n  return isNaN(t) ? null : DateTime.fromMillis(t);\n};\n \nconst stuck = $input.all().map(i => i.json)\n  .filter(r => String(r.Status || '').toLowerCase() === 'new')\n  .map(r => ({ name: r.Name, position: r.Position, applied: parse(r['Applied At']) }))\n  .filter(r => r.applied && now.diff(r.applied, 'hours').hours > MAX_WAIT_HOURS);\n \nconst oldestHours = stuck.length ? Math.round(Math.max(...stuck.map(r => now.diff(r.applied, 'hours').hours))) : 0;\nreturn [{ json: {\n  isStuck: stuck.length > 0,\n  stuckCount: stuck.length,\n  oldestHours,\n  listHtml: stuck.slice(0, 10).map(r => `<li>${r.name} (${r.position}), applied ${r.applied.toFormat('yyyy-MM-dd HH:mm')}</li>`).join(''),\n  time: now.toFormat('yyyy-MM-dd HH:mm'),\n  epochMinute: Math.floor(Date.now() / 60000),\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        208
+      ],
+      "id": "18356c6f-0a6c-4134-a11e-b94128248c60",
+      "name": "Find Stuck Applications"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "31ad6a60-b29d-476f-bc0f-b246b75a4144",
+              "leftValue": "={{ $json.isStuck }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        160,
+        208
+      ],
+      "id": "162fc5d1-1aa4-4b17-b93a-a778bacf7728",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1BC3qee6Hsr-RWmKyU0gJlTm33L6nmsAVt36-UDJvHsM",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "YOUR_GOOGLE_URL"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Time": "={{ $json.time }}",
+            "Workflow": "={{ $json.workflow }}",
+            "Node": "={{ $json.node }}",
+            "Type": "={{ $json.type }}",
+            "Severity": "={{ $json.severity }}",
+            "Message": "={{ $json.message }}",
+            "Suggested Fix": "={{ $json.fix }}",
+            "Execution ID": "={{ $json.executionId }}",
+            "Execution Link": "={{ $json.executionUrl }}",
+            "Fingerprint": "={{ $json.fingerprint }}",
+            "Alerted": "={{ $json.alerted }}",
+            "Epoch Minute": "={{ $json.epochMinute }}",
+            "Status": "open"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Time",
+              "displayName": "Time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Workflow",
+              "displayName": "Workflow",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Node",
+              "displayName": "Node",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Type",
+              "displayName": "Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Severity",
+              "displayName": "Severity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Message",
+              "displayName": "Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Suggested Fix",
+              "displayName": "Suggested Fix",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Execution ID",
+              "displayName": "Execution ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Execution Link",
+              "displayName": "Execution Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Fingerprint",
+              "displayName": "Fingerprint",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Epoch Minute",
+              "displayName": "Epoch Minute",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Alerted",
+              "displayName": "Alerted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        384,
+        -176
+      ],
+      "id": "fc0d64fe-24d8-4d6f-a15f-91d268b7d128",
+      "name": "Append row in sheet",
+      "credentials": {}
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cc5acb57-b9bc-4623-99f9-828d7d9c05ae",
+              "leftValue": "={{ $('check Throttle').item.json.sendNow }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        608,
+        -176
+      ],
+      "id": "a0fc0acf-4663-4123-a562-a12e19276594",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "sendTo": "you@example.com",
+        "subject": "=[{{ $json.Severity.toUpperCase() }}] Workflow Alert: {{ $json.Workflow }} - {{ $json.Node }}",
+        "message": "=<!DOCTYPE html> <html> <head>   <meta charset=\"utf-8\">   <style>     body {       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;       background-color: #f8fafc;       color: #334155;       margin: 0;       padding: 0;     }     .email-container {       max-width: 600px;       margin: 40px auto;       background: #ffffff;       border-radius: 12px;       overflow: hidden;       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);       border: 1px solid #e2e8f0;     }     .email-header {       background: #dc2626;       color: #ffffff;       padding: 28px 24px;       text-align: center;     }     .email-header h1 {       margin: 0;       font-size: 20px;       font-weight: 600;     }     .email-body {       padding: 36px 30px;       line-height: 1.6;     }     .email-body p {       margin: 0 0 16px;       font-size: 15px;       color: #475569;     }     .details-card {       background-color: #f8fafc;       border: 1px solid #e2e8f0;       padding: 20px;       border-radius: 8px;       margin: 24px 0;     }     .details-card p {       margin: 0 0 10px;       font-size: 14px;       color: #334155;     }     .details-card p:last-child {       margin-bottom: 0;     }     .highlight {       font-weight: 600;       color: #0f172a;     }     .badge-critical {       display: inline-block;       background-color: #fee2e2;       color: #991b1b;       padding: 2px 8px;       border-radius: 4px;       font-weight: 600;       font-size: 12px;       text-transform: uppercase;     }     .error-box {       background-color: #fff1f2;       border-left: 4px solid #e11d48;       padding: 14px 16px;       margin: 20px 0;       border-radius: 0 8px 8px 0;       font-family: monospace;       font-size: 13px;       color: #9f1239;       word-break: break-all;     }     .cta-container {       text-align: center;       margin: 32px 0 24px;     }     .btn {       background-color: #0f172a;       color: #ffffff !important;       padding: 12px 24px;       font-size: 14px;       font-weight: 500;       text-decoration: none;       border-radius: 6px;       display: inline-block;     }     .email-footer {       background-color: #f8fafc;       padding: 20px 30px;       text-align: center;       font-size: 13px;       color: #94a3b8;       border-top: 1px solid #e2e8f0;     }   </style> </head> <body>   <div class=\"email-container\">     <div class=\"email-header\">       <h1>⚠️ Workflow Execution Error Alert</h1>     </div>     <div class=\"email-body\">       <p>Hello Admin,</p>              <p>An error was caught in your n8n automation workflow. Here are the execution details:</p>              <div class=\"details-card\">         <p><strong>Workflow:</strong> <span class=\"highlight\">{{ $json.Workflow }}</span></p>         <p><strong>Failed Node:</strong> <span class=\"highlight\">{{ $json.Node }}</span></p>         <p><strong>Severity:</strong> <span class=\"badge-critical\">{{ $json.Severity }}</span></p>         <p><strong>Time:</strong> {{ $json.Time }}</p>       </div>        <p><strong>Error Message:</strong></p>       <div class=\"error-box\">         {{ $json.Message }}       </div>        <p><strong>Suggested Fix:</strong><br>{{ $json['Suggested Fix'] }}</p>              <div class=\"cta-container\">         <a href=\"{{ $json['Execution Link'] }}\" class=\"btn\">Open Execution in n8n</a>       </div>     </div>     <div class=\"email-footer\">       <p>&copy; 2026 n8n Automation Monitoring. All rights reserved.</p>     </div>   </div> </body> </html>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        912,
+        -272
+      ],
+      "id": "264f470e-8bd1-4497-a9ce-20f24de7b4f3",
+      "name": "Send a message",
+      "webhookId": "c9abc2e5-9c3e-4cdf-b5f0-e5a6029cc670",
+      "credentials": {}
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                0,
+                6,
+                5,
+                4,
+                3,
+                2,
+                1
+              ],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -512,
+        32
+      ],
+      "id": "c33da644-1186-4877-90f3-a7b8da3e7a88",
+      "name": "Schedule Trigger1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1BC3qee6Hsr-RWmKyU0gJlTm33L6nmsAVt36-UDJvHsM",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "YOUR_GOOGLE_URL"
+        },
+        "filtersUI": {
+          "values": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -288,
+        32
+      ],
+      "id": "44d29dea-4ee7-4aa8-b852-ea17bd39b604",
+      "name": "Get row(s) in sheet2",
+      "credentials": {}
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// DAILY DIGEST: one summary of the last 24 hours plus everything still open.\nconst num = v => Number(String(v ?? '').replace(/,/g, ''));\nconst nowMin = Math.floor(Date.now() / 60000);\nconst rows = $input.all().map(i => i.json).filter(r => r.Fingerprint);\nconst last24 = rows.filter(r => nowMin - num(r['Epoch Minute']) <= 1440);\nconst open = rows.filter(r => String(r.Status || '').toLowerCase() === 'open');\n \nconst count = (list, key) => list.reduce((acc, r) => { acc[r[key]] = (acc[r[key]] || 0) + 1; return acc; }, {});\nconst byType = Object.entries(count(last24, 'Type')).sort((a, b) => b[1] - a[1]);\nconst groups = Object.values(open.reduce((acc, r) => {\n  acc[r.Fingerprint] = acc[r.Fingerprint] || { ...r, times: 0 };\n  acc[r.Fingerprint].times++;\n  return acc;\n}, {}));\n \nconst esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst typeRows = byType.map(([t, n]) => `<li><b>${esc(t)}</b>: ${n}</li>`).join('') || '<li>None</li>';\nconst openRows = groups.map(g =>\n  `<li><b>${esc(g.Workflow)}</b> at ${esc(g.Node)} (${esc(g.Type)}, ${esc(g.Severity)}) &times;${g.times}<br><span style=\"color:#6b7280;\">${esc(g.Message)}</span><br><i>${esc(g['Suggested Fix'])}</i></li>`).join('');\n \nreturn [{ json: {\n  hasNews: last24.length > 0 || open.length > 0,\n  total24h: last24.length,\n  critical24h: last24.filter(r => r.Severity === 'critical').length,\n  openCount: open.length,\n  typeListHtml: typeRows,\n  openListHtml: openRows || '<li>Nothing open. Good job.</li>',\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        32
+      ],
+      "id": "05de489a-a702-4d36-875d-52cbd3780fcf",
+      "name": "Build Digest"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "007c56d0-b755-44f2-bbcc-a8094d7e608a",
+              "leftValue": "={{ $json.hasNews }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        160,
+        32
+      ],
+      "id": "e3d16785-84eb-4be0-a700-f0c80e1699bd",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "sendTo": "you@example.com",
+        "subject": "=📊 Daily Error Digest: {{ $json.total24h }} Events Reported ({{ $json.critical24h }} Critical)",
+        "message": "=<!DOCTYPE html> <html> <head>   <meta charset=\"utf-8\">   <style>     body {       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;       background-color: #f8fafc;       color: #334155;       margin: 0;       padding: 0;     }     .email-container {       max-width: 600px;       margin: 40px auto;       background: #ffffff;       border-radius: 12px;       overflow: hidden;       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);       border: 1px solid #e2e8f0;     }     .email-header {       background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);       color: #ffffff;       padding: 28px 24px;       text-align: center;     }     .email-header h1 {       margin: 0;       font-size: 20px;       font-weight: 600;     }     .email-body {       padding: 36px 30px;       line-height: 1.6;     }     .email-body p {       margin: 0 0 16px;       font-size: 15px;       color: #475569;     }     .stats-grid {       display: flex;       gap: 12px;       margin: 24px 0;     }     .stat-card {       flex: 1;       background-color: #f8fafc;       border: 1px solid #e2e8f0;       padding: 16px;       border-radius: 8px;       text-align: center;     }     .stat-card h3 {       margin: 0 0 6px;       font-size: 24px;       color: #0f172a;     }     .stat-card p {       margin: 0;       font-size: 13px;       color: #64748b;       font-weight: 500;     }     .section-title {       font-size: 14px;       font-weight: 600;       color: #0f172a;       text-transform: uppercase;       letter-spacing: 0.5px;       margin: 28px 0 12px;     }     .list-box {       background-color: #f8fafc;       border: 1px solid #e2e8f0;       padding: 16px 20px;       border-radius: 8px;       margin-bottom: 20px;     }     .list-box ul {       margin: 0;       padding-left: 20px;       font-size: 14px;       color: #334155;     }     .list-box li {       margin-bottom: 8px;     }     .list-box li:last-child {       margin-bottom: 0;     }     .email-footer {       background-color: #f8fafc;       padding: 20px 30px;       text-align: center;       font-size: 13px;       color: #94a3b8;       border-top: 1px solid #e2e8f0;     }   </style> </head> <body>   <div class=\"email-container\">     <div class=\"email-header\">       <h1>📋 Daily Error & System Digest</h1>     </div>     <div class=\"email-body\">       <p>Hello Admin,</p>              <p>Here is your scheduled daily summary report of workflow executions and system logs from the past 24 hours:</p>              <div class=\"stats-grid\">         <div class=\"stat-card\">           <h3>{{ $json.total24h }}</h3>           <p>Total Events</p>         </div>         <div class=\"stat-card\" style=\"border-left: 4px solid #dc2626;\">           <h3>{{ $json.critical24h }}</h3>           <p>Critical Errors</p>         </div>         <div class=\"stat-card\" style=\"border-left: 4px solid #2563eb;\">           <h3>{{ $json.openCount }}</h3>           <p>Open Issues</p>         </div>       </div>        <div class=\"section-title\">Error Type Breakdown</div>       <div class=\"list-box\">         <ul>           {{ $json.typeListHtml }}         </ul>       </div>        <div class=\"section-title\">Open Status Log</div>       <div class=\"list-box\">         <ul>        {{ $json.openListHtml }}           </ul>       </div>        <p style=\"font-size: 13px; color: #64748b; margin-top: 24px;\">This is an automated daily report generated by your n8n monitoring workflow.</p>     </div>     <div class=\"email-footer\">       <p>&copy; 2026 n8n Automation Monitoring. All rights reserved.</p>     </div>   </div> </body> </html>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        512,
+        16
+      ],
+      "id": "915be12b-deea-430f-a99f-596b6e0a866a",
+      "name": "Send a message1",
+      "webhookId": "afda91cf-12b2-4e20-bec5-85ae97004401",
+      "credentials": {}
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "you@example.com",
+        "subject": "=🚨 Alert: {{ $('Find Stuck Applications').first().json.stuckCount }} Applications Stuck in Queue ({{ $('Find Stuck Applications').first().json.oldestHours }}h Old)",
+        "message": "=<!DOCTYPE html> <html> <head>   <meta charset=\"utf-8\">   <style>     body {       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;       background-color: #f8fafc;       color: #334155;       margin: 0;       padding: 0;     }     .email-container {       max-width: 600px;       margin: 40px auto;       background: #ffffff;       border-radius: 12px;       overflow: hidden;       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);       border: 1px solid #e2e8f0;     }     .email-header {       background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);       color: #ffffff;       padding: 28px 24px;       text-align: center;     }     .email-header h1 {       margin: 0;       font-size: 20px;       font-weight: 600;     }     .email-body {       padding: 36px 30px;       line-height: 1.6;     }     .email-body p {       margin: 0 0 16px;       font-size: 15px;       color: #475569;     }     .stats-grid {       display: flex;       gap: 12px;       margin: 24px 0;     }     .stat-card {       flex: 1;       background-color: #fef2f2;       border: 1px solid #fecaca;       border-left: 4px solid #dc2626;       padding: 16px;       border-radius: 8px;       text-align: center;     }     .stat-card h3 {       margin: 0 0 6px;       font-size: 24px;       color: #991b1b;     }     .stat-card p {       margin: 0;       font-size: 13px;       color: #7f1d1d;       font-weight: 500;     }     .section-title {       font-size: 14px;       font-weight: 600;       color: #0f172a;       text-transform: uppercase;       letter-spacing: 0.5px;       margin: 28px 0 12px;     }     .list-box {       background-color: #f8fafc;       border: 1px solid #e2e8f0;       padding: 16px 20px;       border-radius: 8px;       margin-bottom: 20px;     }     .list-box ul {       margin: 0;       padding-left: 20px;       font-size: 14px;       color: #334155;     }     .list-box li {       margin-bottom: 8px;     }     .list-box li:last-child {       margin-bottom: 0;     }     .email-footer {       background-color: #f8fafc;       padding: 20px 30px;       text-align: center;       font-size: 13px;       color: #94a3b8;       border-top: 1px solid #e2e8f0;     }   </style> </head> <body>   <div class=\"email-container\">     <div class=\"email-header\">       <h1>⚠️ Stuck Applications Queue Alert</h1>     </div>     <div class=\"email-body\">       <p>Hello Admin,</p>              <p>Our periodic workflow check detected candidate applications waiting in the queue past the threshold limit:</p>              <div class=\"stats-grid\">         <div class=\"stat-card\">           <h3>{{ $('Find Stuck Applications').first().json.stuckCount }}</h3>           <p>Stuck Items</p>         </div>         <div class=\"stat-card\">           <h3>{{ $('Find Stuck Applications').first().json.oldestHours }}h</h3>           <p>Oldest Wait Time</p>         </div>       </div>        <div class=\"section-title\">Stuck Applications List</div>       <div class=\"list-box\">         <ul>           {{ $('Find Stuck Applications').first().json.listHtml }}         </ul>       </div>        <p style=\"font-size: 13px; color: #64748b; margin-top: 24px;\">Please investigate the recruitment pipeline to process these pending applications.</p>     </div>     <div class=\"email-footer\">       <p>&copy; 2026 Recruitment Automation System. All rights reserved.</p>     </div>   </div> </body> </html>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        192
+      ],
+      "id": "c13e1702-9c3e-4e98-950c-42e7ce2c7a4a",
+      "name": "Send a message2",
+      "webhookId": "fd2167f2-919f-4ede-8eb3-1e9f5870746f",
+      "credentials": {}
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1BC3qee6Hsr-RWmKyU0gJlTm33L6nmsAVt36-UDJvHsM",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "YOUR_GOOGLE_URL"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Time": "={{ $('Find Stuck Applications').item.json.time }}\n```",
+            "Workflow": "hearBeat",
+            "Node": "Heartbeat",
+            "Type": "Heartbeat ",
+            "Severity": "Critical ",
+            "Message": "go check workflow 2 ",
+            "Suggested Fix": "activate work 2 "
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Time",
+              "displayName": "Time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Workflow",
+              "displayName": "Workflow",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Node",
+              "displayName": "Node",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Type",
+              "displayName": "Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Severity",
+              "displayName": "Severity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Message",
+              "displayName": "Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Suggested Fix",
+              "displayName": "Suggested Fix",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Execution ID",
+              "displayName": "Execution ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Execution Link",
+              "displayName": "Execution Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Fingerprint",
+              "displayName": "Fingerprint",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Epoch Minute",
+              "displayName": "Epoch Minute",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Alerted",
+              "displayName": "Alerted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        672,
+        192
+      ],
+      "id": "798bac5d-9297-4fc3-b439-26c8a90b5f9a",
+      "name": "Append row in sheet1",
+      "credentials": {}
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "classify Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "classify Error": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "check Throttle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Find Stuck Applications",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Stuck Applications": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check Throttle": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet2": {
+      "main": [
+        [
+          {
+            "node": "Build Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Digest": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message2": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "Africa/Cairo",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "7f1aa4a9-b928-4140-a699-9a957ee9901d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "60cc8007be45046e43f1c581e26d315f4f6c01a209b4535c2581e0f902db5668"
+  },
+  "nodeGroups": [],
+  "id": "1dnHwtZw1xPCuUDA",
+  "tags": []
+}
